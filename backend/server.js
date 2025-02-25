@@ -1,16 +1,16 @@
 import dotenv from "dotenv";
 import cors from "cors";
-import userRoutes from "./Routes/userRoute.js";
-import pool from "./config/db.js";
 import express from 'express';
-import bodyParser from 'body-parser'; 
+import bodyParser from 'body-parser';
 import { createClient } from '@supabase/supabase-js';
+import pool from "./config/db.js";
+import userRoutes from "./Routes/userRoute.js";
+import eventRoutes from "./Routes/eventRoute.js";
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
-// const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 // Middleware
@@ -26,18 +26,7 @@ pool.connect()
 
 // Routes
 app.use("/users", userRoutes);
-
-
-app.post('/api/events', async (req, res) => {
-  const eventDetails = req.body;
-  const { data, error } = await supabase.from('event_details').insert([eventDetails]);
-
-  if (error) {
-      res.status(500).json({ error: error.message });
-  } else {
-      res.status(200).json({ data });
-  }
-});
+app.use("/events", eventRoutes); // Integrated event routes
 
 app.get("/", (req, res) => res.send("🚀 API is running"));
 

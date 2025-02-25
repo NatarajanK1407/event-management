@@ -1,96 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  Music, Mic2, Rocket, Cpu, Code, HeartPulse, UtensilsCrossed, Palette, Pencil, Trash
+} from 'lucide-react';
+import axios from 'axios';
 
 const LandingPage = () => {
   const genres = [
-    'Music',
-    'Comedy',
-    'Product Launch',
-    'Tech',
-    'Coding',
-    'Health',
-    'Food',
-    'Art',
+    { name: 'Music', icon: <Music size={18} className="mr-2" /> },
+    { name: 'Comedy', icon: <Mic2 size={18} className="mr-2" /> },
+    { name: 'Product Launch', icon: <Rocket size={18} className="mr-2" /> },
+    { name: 'Tech', icon: <Cpu size={18} className="mr-2" /> },
+    { name: 'Coding', icon: <Code size={18} className="mr-2" /> },
+    { name: 'Health', icon: <HeartPulse size={18} className="mr-2" /> },
+    { name: 'Food', icon: <UtensilsCrossed size={18} className="mr-2" /> },
+    { name: 'Art', icon: <Palette size={18} className="mr-2" /> },
   ];
 
-  const events = [
-    {
-      id: 1,
-      title: 'Tech Conference',
-      description: 'An exciting tech event!',
-      genre: 'Tech',
-      image: 'https://via.placeholder.com/300x200.png?text=Tech+Conference',
-      location: 'Tech City Convention Center',
-      date: '2025-05-15',
-    },
-    {
-      id: 2,
-      title: 'Music Festival',
-      description: 'A lively music event!',
-      genre: 'Music',
-      image: 'https://via.placeholder.com/300x200.png?text=Music+Festival',
-      location: 'Music Park, City Center',
-      date: '2025-06-01',
-    },
-    {
-      id: 3,
-      title: 'Comedy Night',
-      description: 'A hilarious comedy event!',
-      genre: 'Comedy',
-      image: 'https://via.placeholder.com/300x200.png?text=Comedy+Night',
-      location: 'Comedy Club, Downtown',
-      date: '2025-07-20',
-    },
-    {
-      id: 4,
-      title: 'Product Launch',
-      description: 'An innovative product launch event!',
-      genre: 'Product Launch',
-      image: 'https://via.placeholder.com/300x200.png?text=Product+Launch',
-      location: 'City Hall, Main Street',
-      date: '2025-08-10',
-    },
-    {
-      id: 5,
-      title: 'Health Summit',
-      description: 'A health and wellness summit!',
-      genre: 'Health',
-      image: 'https://via.placeholder.com/300x200.png?text=Health+Summit',
-      location: 'Wellness Center, Green Park',
-      date: '2025-09-15',
-    },
-    {
-      id: 6,
-      title: 'Coding Bootcamp',
-      description: 'A hands-on coding bootcamp!',
-      genre: 'Coding',
-      image: 'https://via.placeholder.com/300x200.png?text=Coding+Bootcamp',
-      location: 'Tech Hub, Silicon Valley',
-      date: '2025-10-01',
-    },
-    {
-      id: 7,
-      title: 'Food Festival',
-      description: 'A tasty food festival!',
-      genre: 'Food',
-      image: 'https://via.placeholder.com/300x200.png?text=Food+Festival',
-      location: 'Food Plaza, Riverside',
-      date: '2025-11-12',
-    },
-    {
-      id: 8,
-      title: 'Art Exhibition',
-      description: 'An artistic exhibition of paintings and sculptures!',
-      genre: 'Art',
-      image: 'https://via.placeholder.com/300x200.png?text=Art+Exhibition',
-      location: 'Art Gallery, Old Town',
-      date: '2025-12-05',
-    },
-  ];
-
+  const user = JSON.parse(localStorage.getItem('user')) || {};
   const [selectedGenres, setSelectedGenres] = useState([]);
-  
-  // Filter events based on selected genres
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const { data } = await axios.get('http://localhost:5000/events', {
+          params: { id: user.id, role: user.role }
+        });
+        setEvents(data);
+      } catch (err) {
+        console.error('Error fetching events:', err);
+      }
+    };
+    fetchEvents();
+  }, [user.id, user.role]);
+
   const handleGenreChange = (e) => {
     const genre = e.target.value;
     setSelectedGenres((prevSelectedGenres) =>
@@ -100,9 +44,19 @@ const LandingPage = () => {
     );
   };
 
+  const handleDelete = async (eventId) => {
+    try {
+      await axios.delete(`http://localhost:5000/events/${eventId}`, {
+        data: { id: user.id }
+      });
+      setEvents(events.filter(event => event.id !== eventId));
+    } catch (err) {
+      console.error('Error deleting event:', err);
+    }
+  };
+
   const filteredEvents = events.filter(
-    (event) =>
-      selectedGenres.length === 0 || selectedGenres.includes(event.genre)
+    (event) => selectedGenres.length === 0 || selectedGenres.includes(event.genre)
   );
 
   return (
@@ -111,17 +65,17 @@ const LandingPage = () => {
       <div className="w-1/5 bg-gray-800 text-white p-6 transition-all duration-300">
         <h2 className="text-2xl font-semibold mb-6">Genres</h2>
         <ul>
-          {genres.map((genre) => (
-            <li key={genre} className="mb-4">
-              <label className="flex items-center">
+          {genres.map(({ name, icon }) => (
+            <li key={name} className="mb-4 flex items-center">
+              <label className="flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  value={genre}
-                  checked={selectedGenres.includes(genre)}
+                  value={name}
+                  checked={selectedGenres.includes(name)}
                   onChange={handleGenreChange}
                   className="mr-2"
                 />
-                {genre}
+                {icon} {name}
               </label>
             </li>
           ))}
@@ -152,6 +106,17 @@ const LandingPage = () => {
               >
                 Read More
               </Link>
+
+              {user.role === 'organizer' && user.id === event.organizer_id && (
+                <div className="mt-4 flex gap-3">
+                  <Link to={`/edit-event/${event.id}`} className="text-green-600 hover:text-green-800">
+                    <Pencil size={18} />
+                  </Link>
+                  <button onClick={() => handleDelete(event.id)} className="text-red-600 hover:text-red-800">
+                    <Trash size={18} />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
